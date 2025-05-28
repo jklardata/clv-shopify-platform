@@ -1,0 +1,31 @@
+# Shopify API
+ShopifyAPI==12.7.0
+
+# Data Processing and Analysis
+pandas==2.2.1
+numpy==1.26.4
+
+# Machine Learning
+lightgbm==4.3.0
+scikit-learn==1.3.2
+
+# Data Warehouse
+snowflake-connector-python==3.7.0
+
+# API and Web Framework
+fastapi==0.104.0
+uvicorn==0.23.2
+
+# Environment and Configuration
+python-dotenv==1.0.1
+pydantic==2.4.2
+
+# Testing
+pytest==7.4.2
+pytest-cov==4.1.0
+
+# Utilities
+python-dateutil==2.8.2
+tqdm==4.66.1
+tabulate==0.9.0
+pytz==2024.1 
