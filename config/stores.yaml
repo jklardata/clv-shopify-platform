@@ -1,0 +1,88 @@
+# Multi-store configuration for CLV Platform
+
+# Global settings that apply to all stores
+global:
+  snowflake:
+    database: "CLV_ANALYTICS"
+    warehouse: "CLV_WAREHOUSE"
+    role: "SHOPIFY_CLV_ROLE"
+    settings:
+      warehouse_size: "XSMALL"
+      timeout: 300
+      auto_suspend: 60
+  
+  shopify:
+    api_version: "2024-01"
+    rate_limits:
+      max_requests_per_second: 2
+      max_retries: 3
+    
+  error_handling:
+    retry_on_failure: true
+    backoff_factor: 1.5
+
+# Store-specific configurations
+stores:
+  # Template for adding new stores (copy this template for new stores)
+  # new_store_id:
+  #   name: "Store Name"
+  #   shopify:
+  #     shop_url: "store.myshopify.com"
+  #     access_token: "${STORE_ACCESS_TOKEN}"
+  #   snowflake:
+  #     schema: "new_store_id_schema"  # Optional - will be auto-generated if not provided
+  #     batch_size: 250  # Optional - defaults to global setting
+
+  test1_store:
+    name: "Test Store 1"
+    shopify:
+      shop_url: "test1-store.myshopify.com"
+      access_token: "${TEST1_STORE_ACCESS_TOKEN}"
+    snowflake:
+      schema: "test1_store_schema"
+      batch_size: 1000
+
+  test2_store:
+    name: "Test Store 2"
+    shopify:
+      shop_url: "test2-store.myshopify.com"
+      access_token: "${TEST2_STORE_ACCESS_TOKEN}"
+    snowflake:
+      schema: "test2_store_schema"
+      batch_size: 1000
+
+# Global settings for parallel processing and error handling
+global_settings:
+  max_concurrent_stores: 5
+  default_batch_size: 250
+  default_sync_interval: 3600
+  default_retry_attempts: 3
+  log_level: "INFO"
+  
+  # Rate limiting settings
+  rate_limits:
+    calls_per_minute: 50
+    burst_limit: 80
+
+# Example store configurations
+store1:
+  name: "Demo Store 1"
+  shop_url: "store1.myshopify.com"
+  access_token: "${STORE1_ACCESS_TOKEN}"
+  warehouse: "STORE1_WH"
+  database: "STORE1_DB"
+  settings:
+    batch_size: 250
+    sync_interval: 3600
+    retry_attempts: 3
+    
+store2:
+  name: "Demo Store 2"
+  shop_url: "store2.myshopify.com"
+  access_token: "${STORE2_ACCESS_TOKEN}"
+  warehouse: "STORE2_WH"
+  database: "STORE2_DB"
+  settings:
+    batch_size: 500
+    sync_interval: 7200
+    retry_attempts: 5 

@@ -7,6 +7,9 @@ import pandas as pd
 from typing import List, Dict, Optional
 import logging
 import ssl
+import certifi
+import urllib3
+import requests
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,46 +20,60 @@ snowflake_logger = logging.getLogger('snowflake.connector')
 snowflake_logger.setLevel(logging.WARNING)
 
 class ShopifyDataIngestion:
-    def __init__(self):
-        load_dotenv()
+    def __init__(self, snowflake_config: Dict, shopify_config: Dict):
+        """
+        Initialize data ingestion with Snowflake and Shopify configurations.
         
-        # Configure Snowflake connection parameters
+        Args:
+            snowflake_config: Dict containing Snowflake connection parameters
+                (user, password, account, warehouse, database, schema, role)
+            shopify_config: Dict containing Shopify connection parameters
+                (shop_url, access_token, api_version)
+        """
+        # Configure SSL settings
         os.environ['SNOWFLAKE_PYTHON_CONNECTOR_OCSP_MODE'] = 'INSECURE'
-        os.environ['REQUESTS_CA_BUNDLE'] = '/etc/ssl/cert.pem'  # Standard macOS CA bundle location
+        os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+        os.environ['SSL_CERT_FILE'] = certifi.where()
         
-        # Get Snowflake role from environment
-        snowflake_role = os.getenv('SNOWFLAKE_ROLE')
-        if not snowflake_role:
-            raise ValueError("SNOWFLAKE_ROLE environment variable is not set")
+        # Configure urllib3 to use system CA certificates
+        urllib3.util.ssl_.DEFAULT_CERTS = certifi.where()
+        
+        # Configure requests to use SSL verification
+        requests.packages.urllib3.util.ssl_.DEFAULT_CERTS = certifi.where()
+        
+        # Validate Snowflake configuration
+        required_snowflake_params = ['user', 'password', 'account', 'warehouse', 'database', 'schema', 'role']
+        missing_params = [param for param in required_snowflake_params if param not in snowflake_config]
+        if missing_params:
+            raise ValueError(f"Missing required Snowflake parameters: {', '.join(missing_params)}")
         
         # Initialize Snowflake connection with SSL configuration
         self.snowflake_conn = connect(
-            account=os.getenv('SNOWFLAKE_ACCOUNT'),
-            user=os.getenv('SNOWFLAKE_USER'),
-            password=os.getenv('SNOWFLAKE_PASSWORD'),
-            warehouse=os.getenv('SNOWFLAKE_WAREHOUSE'),
-            database=os.getenv('SNOWFLAKE_DATABASE'),
-            schema=os.getenv('SNOWFLAKE_SCHEMA'),
-            role=snowflake_role,
+            account=snowflake_config['account'],
+            user=snowflake_config['user'],
+            password=snowflake_config['password'],
+            warehouse=snowflake_config['warehouse'],
+            database=snowflake_config['database'],
+            schema=snowflake_config['schema'],
+            role=snowflake_config['role'],
             ocsp_response_cache_filename='/tmp/ocsp_response_cache',
-            ssl_verify_certificate=False,
             insecure_mode=True,
             validate_default_parameters=True,
             client_session_keep_alive=True,
             application='ShopifyCLV'
         )
         
-        logger.info(f"Connected to Snowflake with role: {snowflake_role}")
+        logger.info(f"Connected to Snowflake with role: {snowflake_config['role']}")
         
-        # Initialize Shopify connection
-        shop_url = os.getenv('SHOPIFY_SHOP_NAME')  # Using SHOPIFY_SHOP_NAME directly
-        api_version = '2024-01'  # Using a recent stable version
-        access_token = os.getenv('SHOPIFY_ACCESS_TOKEN')
+        # Validate Shopify configuration
+        required_shopify_params = ['shop_url', 'access_token']
+        missing_params = [param for param in required_shopify_params if param not in shopify_config]
+        if missing_params:
+            raise ValueError(f"Missing required Shopify parameters: {', '.join(missing_params)}")
         
-        if not shop_url:
-            raise ValueError("SHOPIFY_SHOP_NAME environment variable is not set")
-        if not access_token:
-            raise ValueError("SHOPIFY_ACCESS_TOKEN environment variable is not set")
+        shop_url = shopify_config['shop_url']
+        access_token = shopify_config['access_token']
+        api_version = shopify_config.get('api_version', '2024-01')
             
         # Ensure shop_url has the full myshopify.com domain
         if not shop_url.endswith('.myshopify.com'):
@@ -64,10 +81,17 @@ class ShopifyDataIngestion:
         elif not shop_url.startswith('https://'):
             shop_url = f"https://{shop_url}"
         
-        # Configure Shopify API
+        # Configure Shopify API with SSL verification
         shopify.Session.setup(api_key=access_token, secret=None)
         session = shopify.Session(shop_url, api_version, access_token)
         shopify.ShopifyResource.activate_session(session)
+        
+        # Configure SSL context for requests
+        shopify.ShopifyResource.site = shop_url + '/admin/api/' + api_version
+        shopify.ShopifyResource.headers = {
+            'X-Shopify-Access-Token': access_token,
+            'Content-Type': 'application/json'
+        }
         
         logger.info(f"Successfully initialized connections to Snowflake and Shopify ({shop_url})")
     
@@ -429,11 +453,34 @@ class ShopifyDataIngestion:
         finally:
             self.snowflake_conn.close()
 
+    def run_ingestion(self, days_back: int = 30) -> bool:
+        """Run the complete data ingestion process."""
+        try:
+            self.sync_data(days_back)
+            return True
+        except Exception as e:
+            logger.error(f"Error during data ingestion: {str(e)}")
+            return False
+
 if __name__ == "__main__":
     try:
-        ingestion = ShopifyDataIngestion()
+        snowflake_config = {
+            'user': os.getenv('SNOWFLAKE_USER'),
+            'password': os.getenv('SNOWFLAKE_PASSWORD'),
+            'account': os.getenv('SNOWFLAKE_ACCOUNT'),
+            'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE'),
+            'database': os.getenv('SNOWFLAKE_DATABASE'),
+            'schema': os.getenv('SNOWFLAKE_SCHEMA'),
+            'role': os.getenv('SNOWFLAKE_ROLE')
+        }
+        shopify_config = {
+            'shop_url': os.getenv('SHOPIFY_SHOP_NAME'),
+            'access_token': os.getenv('SHOPIFY_ACCESS_TOKEN'),
+            'api_version': '2024-01'
+        }
+        ingestion = ShopifyDataIngestion(snowflake_config, shopify_config)
         logger.info("Starting data sync process...")
-        ingestion.sync_data(days_back=30)  # Sync last 30 days of data
+        ingestion.run_ingestion(days_back=30)  # Sync last 30 days of data
         logger.info("Data ingestion completed successfully")
     except Exception as e:
         logger.error(f"Error during data ingestion: {str(e)}")

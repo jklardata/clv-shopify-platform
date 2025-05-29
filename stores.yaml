@@ -1,0 +1,11 @@
+stores:
+  clv-test-store:
+    shop_url: clv-test-store.myshopify.com
+    schema_name: clv_test_store_schema
+    api_version: "2024-01"
+    tables:
+      - customers
+      - orders
+      - order_items
+      - abandoned_checkouts
+      - returns 
