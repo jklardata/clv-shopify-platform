@@ -1,318 +1,120 @@
-# Customer Lifetime Value (CLV) Platform for Shopify
+# Shopify to Snowflake CLV Pipeline
+
+A robust data pipeline for calculating and analyzing Customer Lifetime Value (CLV) metrics by syncing Shopify data to Snowflake.
 
 ## Overview
-A comprehensive analytics platform that integrates Shopify data with Snowflake to calculate and predict Customer Lifetime Value. This platform helps e-commerce businesses make data-driven decisions by providing deep insights into customer behavior and value.
 
-## Key Features
+This platform enables businesses to track and analyze customer lifetime value by automatically syncing Shopify customer, order, and checkout data to Snowflake. The pipeline handles various data types including customers, orders, order line items, abandoned checkouts, and returns - providing a complete view of customer purchasing behavior.
 
-### 1. Data Integration
-- **Shopify Data Collection**
-  - Real-time order tracking
-  - Customer profile synchronization
-  - Product catalog management
-  - Transaction history
-  - Cursor-based pagination for efficient data retrieval
+## Features
 
-- **Snowflake Data Warehouse**
-  - Automated data pipeline
-  - Secure data storage
-  - Role-based access control
-  - Optimized query performance
+- **Automated Data Sync**: Continuously syncs Shopify data to Snowflake using cursor-based pagination
+- **Rich Customer Data**: Captures comprehensive customer information including:
+  - Basic profile (email, name, etc.)
+  - Purchase history
+  - Order details
+  - Abandoned checkouts
+  - Returns and refunds
+  
+- **CLV Metrics**: Calculate key CLV metrics:
+  - Historic customer lifetime value
+  - Total spent
+  - Orders count
+  - First/last order dates
+  - Marketing consent status
+  - Customer tags
 
-### 2. Analytics Capabilities
-- **Customer Metrics**
-  - Customer Lifetime Value (CLV) calculation
-  - Purchase frequency analysis
-  - Average order value
-  - Customer segmentation (RFM Analysis)
-  - Churn risk prediction
+- **Flexible Schema**: Data stored in a configurable Snowflake schema per store
 
-- **Business Intelligence**
-  - Revenue forecasting
-  - Product performance metrics
-  - Marketing campaign effectiveness
-  - Cohort analysis
-  - Seasonal trend identification
+## Requirements
 
-### 3. Technical Features
-- Robust error handling
-- Rate limit management
-- Data validation and cleaning
-- Automated data refresh
-- Scalable architecture
-
-## System Architecture
-
-### Components
-1. **Data Collection Layer**
-   - Shopify API integration
-   - Rate limiting and retry logic
-   - Data validation and transformation
-
-2. **Storage Layer**
-   - Snowflake data warehouse
-   - Optimized table structures
-   - Data partitioning strategy
-
-3. **Analytics Layer**
-   - CLV calculation engine
-   - Predictive modeling
-   - Statistical analysis tools
-
-4. **Presentation Layer**
-   - SQL views for analysis
-   - Data export capabilities
-   - Visualization-ready datasets
-
-## Setup and Installation
-
-### Prerequisites
-- Python 3.8+
-- Shopify Partner/Admin API access
-- Snowflake account with ACCOUNTADMIN role
+- Python 3.11+
+- Shopify Admin API access
+- Snowflake account with write permissions
 - Required Python packages (see requirements.txt)
 
-### Configuration
-1. **Environment Setup**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
+## Installation
 
-2. **Environment Variables**
-   ```env
-   SHOPIFY_ACCESS_TOKEN=<your_token>
-   SHOPIFY_SHOP_URL=<your_shop>.myshopify.com
-   SNOWFLAKE_USER=<username>
-   SNOWFLAKE_PASSWORD=<password>
-   SNOWFLAKE_ACCOUNT=<account>
-   SNOWFLAKE_WAREHOUSE=<warehouse>
-   SNOWFLAKE_DATABASE=<database>
-   SNOWFLAKE_SCHEMA=<schema>
-   ```
-
-### Database Setup
-- Automated table creation
-- Role and permission configuration
-- Data validation checks
-
-## Usage Examples
-
-### 1. Basic CLV Analysis
-```python
-from src.models.clv_predictor import CLVPredictor
-
-predictor = CLVPredictor()
-clv_data = predictor.calculate_customer_value(customer_id='12345')
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/clv-shopify-platform.git
+cd clv-shopify-platform
 ```
 
-### 2. Customer Segmentation
-```python
-from src.models.customer_segmentation import RFMAnalysis
-
-rfm = RFMAnalysis()
-segments = rfm.analyze_customers()
+2. Create and activate virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 ```
 
-### 3. Revenue Forecasting
-```python
-from src.models.forecasting import RevenueForecast
-
-forecast = RevenueForecast()
-predictions = forecast.predict_next_quarter()
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
 ```
 
-## Project Structure
-```
-clv-shopify-platform/
-├── src/
-│   ├── data_warehouse/
-│   │   ├── create_tables.py
-│   │   ├── snowflake_connector.py
-│   │   └── verify_tables.py
-│   ├── shopify/
-│   │   ├── connector.py
-│   │   └── data_ingestion.py
-│   └── models/
-│       ├── clv_predictor.py
-│       └── customer_segmentation.py
-├── tests/
-│   ├── test_data_ingestion.py
-│   └── test_clv_calculations.py
-├── sql/
-│   ├── table_creation.sql
-│   └── analysis_views.sql
-├── config/
-│   └── config.yaml
-├── requirements.txt
-├── setup.sh
-└── README.md
+4. Configure environment variables:
+```bash
+export SHOPIFY_SHOP_NAME="your-store-name"
+export SHOPIFY_ACCESS_TOKEN="your-access-token"
+export SNOWFLAKE_USER="your-snowflake-user"
+export SNOWFLAKE_PASSWORD="your-snowflake-password"
+export SNOWFLAKE_ACCOUNT="your-snowflake-account"
 ```
 
-## Data Models
+## Usage
 
-### Customer Data
-- Demographics
-- Purchase history
-- Engagement metrics
-- CLV predictions
+Run the data sync:
 
-### Order Data
-- Transaction details
-- Product information
-- Payment data
-- Shipping information
+```bash
+python load_shopify_data.py your-store-name
+```
 
-### Product Data
-- Catalog information
-- Pricing history
-- Inventory levels
-- Performance metrics
+This will:
+1. Initialize connections to Shopify and Snowflake
+2. Load customer data
+3. Load order data and line items
+4. Load abandoned checkout data
+5. Calculate and update CLV metrics
 
-## Security Measures
-- Encrypted credentials
-- Role-based access control
-- Secure API connections
-- Data encryption at rest
+## Data Model
 
-## Performance Optimization
-- Efficient data loading
-- Query optimization
-- Incremental updates
-- Caching strategies
+The platform uses the following core tables in Snowflake:
 
-## Troubleshooting Guide
-- Connection issues
-- Data sync problems
-- Permission errors
-- Common error messages
+- `customers`: Customer profiles and CLV metrics
+- `orders`: Order details and status
+- `order_items`: Individual line items from orders
+- `abandoned_checkouts`: Abandoned cart data
+- `returns`: Order return and refund data
+
+## Benefits
+
+1. **Data-Driven Decisions**: Make informed decisions based on actual customer behavior and value
+
+2. **Customer Segmentation**: Segment customers based on:
+   - Purchase frequency
+   - Total spend
+   - Product preferences
+   - Likelihood to return
+
+3. **Marketing Optimization**: 
+   - Target high-value customers
+   - Re-engage inactive customers
+   - Optimize acquisition costs
+   - Personalize marketing campaigns
+
+4. **Revenue Forecasting**:
+   - Predict future customer value
+   - Identify trends in customer behavior
+   - Forecast revenue based on customer segments
 
 ## Contributing
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create Pull Request
 
-## Support
-- GitHub Issues
-- Documentation
-- Email support
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
-MIT License - see LICENSE file for details
 
-## Acknowledgments
-- Shopify API Documentation
-- Snowflake Documentation
-- Contributors and maintainers
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Multi-Store Data Ingestion
+## Support
 
-### Store Configuration
-The platform supports multiple Shopify stores through a configuration-driven approach:
-
-```yaml
-# config/stores.yaml
-stores:
-  store1:
-    name: "Store One"
-    shop_url: "store1.myshopify.com"
-    access_token: "${STORE1_ACCESS_TOKEN}"
-    warehouse: "STORE1_WH"
-    database: "STORE1_DB"
-    
-  store2:
-    name: "Store Two"
-    shop_url: "store2.myshopify.com"
-    access_token: "${STORE2_ACCESS_TOKEN}"
-    warehouse: "STORE2_WH"
-    database: "STORE2_DB"
-```
-
-### Database Schema Design
-Each store's data is isolated using a multi-tenant architecture:
-
-```sql
--- Snowflake schema per store
-CREATE DATABASE IF NOT EXISTS CLV_ANALYTICS;
-CREATE SCHEMA IF NOT EXISTS CLV_ANALYTICS.STORE1;
-CREATE SCHEMA IF NOT EXISTS CLV_ANALYTICS.STORE2;
-```
-
-### Parallel Data Ingestion
-```python
-from src.shopify.multi_store_ingestion import MultiStoreIngestion
-
-# Initialize multi-store ingestion
-ingestion = MultiStoreIngestion()
-
-# Run parallel ingestion for all stores
-ingestion.ingest_all_stores()
-
-# Or ingest specific stores
-ingestion.ingest_stores(['store1', 'store2'])
-```
-
-### Scaling Considerations
-
-1. **Resource Management**
-   - Separate Snowflake warehouses per store
-   - Dynamic warehouse sizing based on data volume
-   - Concurrent loading optimization
-
-2. **Rate Limiting**
-   - Per-store API call tracking
-   - Adaptive rate limiting
-   - Backoff strategies for API limits
-
-3. **Error Handling**
-   - Store-specific error logging
-   - Independent retry mechanisms
-   - Alerting per store
-
-4. **Data Isolation**
-   - Separate schemas per store
-   - Independent backup strategies
-   - Store-specific access controls
-
-### Monitoring and Analytics
-
-1. **Store-Level Metrics**
-```python
-from src.monitoring.store_metrics import StoreMetrics
-
-metrics = StoreMetrics()
-store_status = metrics.get_store_health('store1')
-```
-
-2. **Aggregated Insights**
-```python
-from src.analytics.cross_store_analysis import CrossStoreAnalysis
-
-analysis = CrossStoreAnalysis()
-benchmarks = analysis.compare_store_performance()
-```
-
-### Best Practices
-
-1. **Configuration Management**
-   - Use environment variables for sensitive data
-   - Maintain separate config files per environment
-   - Version control store configurations
-
-2. **Performance Optimization**
-   - Schedule ingestion during off-peak hours
-   - Use incremental loading strategies
-   - Implement data archival policies
-
-3. **Security**
-   - Role-based access per store
-   - Encrypted store credentials
-   - Audit logging per store
-
-4. **Scalability**
-   - Horizontal scaling for more stores
-   - Vertical scaling for larger stores
-   - Auto-scaling warehouse configurations
+For support, please open an issue in the GitHub repository or contact the maintainers.
